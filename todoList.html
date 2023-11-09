@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <style>
+        body {
+            padding: 10px;
+            margin: 0;
+        }
+        .dropdown-toggle::after {
+            display: none;
+        }
+        .task {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .task label.checked {
+            text-decoration: line-through;
+        }
+        .control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .filters span.active {
+            color: rgb(0, 101, 178);
+        }
+        .filters span {
+            cursor: pointer;
+            margin-right: 9px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        Todo App 
+                    </div>
+                    <div class="card-body">
+                        <form>
+                            <div class="input-group">
+                                <input type="text" id="txtTaskName" class="form-control">
+                                <button type="submit" class="btn btn-primary" id="btnAdd">
+                                    Ekle
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header control">
+                        <div class="filters">
+                        <span class="active" id="all">Hepsi</span>
+                        <span id="Completed">Tamamlanmış</span>
+                        <span id="Pending">Bekleyen</span>
+                    </div>
+                        <button id="btnClear" class="btn btn-danger btn-sm float-end">Temizle</button>
+                    </div>
+                    <ul id="task-list" class="list-group list-group-flush">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script>
+        
+        let btnAdd = document.querySelector("#btnAdd");
+        let taskInput = document.querySelector("#txtTaskName");
+        let btnClear = document.querySelector("#btnClear");
+        let isEdit = false;
+        let editID;
+        let filters = document.querySelectorAll(".filters span");
+
+        let tasksList = []; 
+
+        if (localStorage.getItem("tasksList") !== null) { // verilerin tarayıcı hafızasında saklanmasını saglamak
+            tasksList = JSON.parse(localStorage.getItem("tasksList"));
+        }
+        // verilerde değişiklik yapılan her fonksiyona "localStorage.setItem("tasksList", JSON.stringify(tasksList));" kodu eklenmeli.
+
+        function displayTasks(filter) {
+            document.querySelector("#task-list").innerHTML = "";
+            if (tasksList.length == 0) {
+                document.querySelector("#task-list").innerHTML = "<p style = 'margin-left:20px; margin-top: 5px;'>Liste boş.</p>";
+            }
+            for (let task of tasksList) {
+                let status = task.status == "Completed" ? "checked" : ""; // tek satırda if kontrolu yapmak
+                if (filter == task.status || filter == "all"){
+                    let li = `
+                <li class="task list-group-item" ">
+                    <div class="form-check"">
+                        <input onclick="checkTask(this)" type="checkbox" id="${task.id}" class="form-check-input" ${status}>
+                        <label for="${task.id}" class="${status} form-check-label">${task.taskName}</label>
+                    </div>
+                    <div class="dropdown">
+                    <button class="btn btn-link dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa-solid fa-ellipsis"></i>
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <a onclick="deleteTask(${task.id})" class="dropdown-item" href="#"><i class="fa-solid fa-trash-can"></i> Sil</a>
+                        <a onclick='updateTask(${task.id}, "${task.taskName}")' class="dropdown-item" href="#"><i class="fa-solid fa-pen"></i> Düzenle</a>
+                    </div> 
+                </div>
+                </li>
+
+        `; // html etiketinin içerisine yazılan "onclick", jsdeki click event listener ile aynı işlevi görür.
+                    document.getElementById("task-list").insertAdjacentHTML("beforeend", li);
+                }
+        } 
+        }
+        displayTasks("all");
+
+        // ADD TASK
+
+        function addTask(event) {
+            let txtInput = document.querySelector("#txtTaskName").value; // seçili inputun değerini almak
+            if (txtInput == "" || txtInput == " ") {
+                alert("Bir görev girmelisiniz!");
+            } else {
+                if (isEdit == false) {
+                    tasksList.push({"id": tasksList.length + 1, "taskName": txtInput, "status": "Pending"}); // seçili dizi, obje vb.nin sonuna madde eklemek
+
+                } else {
+                    for (let task of tasksList) {
+                        if (task.id == editID) {
+                            task.taskName = taskInput.value;
+                            isEdit = false;
+                        }
+                    }
+                }
+                displayTasks(document.querySelector("span.active").id);
+                localStorage.setItem("tasksList", JSON.stringify(tasksList)); // tarayıcı hafızasını guncellemek
+                document.querySelector("#txtTaskName").value = "";
+            }
+            event.preventDefault();
+        }
+
+        btnAdd.addEventListener("click", addTask);
+        txtTaskName.addEventListener("keypress", function(event){ // klavye tuşa basma eventi eklemek
+            if (event.key == "Enter") {
+               addTask(event);
+            }
+        });
+
+        for (let span of filters) {
+            span.addEventListener("click", function(){
+                document.querySelector("span.active").classList.remove("active");
+                span.classList.add("active");
+                displayTasks(span.id)
+            })
+        }
+
+        // DELETE TASK
+
+        function deleteTask(id) {
+            // arrow function
+            let deletedID = tasksList.findIndex(task => task.id == id); // belirtilen dizi veya objedeki elemanları sırasıyla değişkene aktarır ve eğer koşula uyuyor ise elemanın index numarasını geriye döndürür
+            tasksList.splice(deletedID, 1);
+            localStorage.setItem("tasksList", JSON.stringify(tasksList)); // tarayıcı hafızasını guncellemek
+            displayTasks(document.querySelector("span.active").id);
+        }
+
+        // UPDATE TASK
+
+        function updateTask(taskID, taskName) {
+            isEdit = true;
+            editID = taskID;
+            taskInput.value = taskName;
+            taskInput.focus(); // inputun seçilmesini sağlar
+            taskInput.classList.add("active");
+        }
+
+        // DELETE ALL
+
+        btnClear.addEventListener("click", function(){
+            tasksList.splice(0, tasksList.length);
+            localStorage.setItem("tasksList", JSON.stringify(tasksList)); // tarayıcı hafızasını guncellemek
+            displayTasks("all");
+        });
+        
+        // CHECK TASK
+
+        function checkTask(checkedTask){
+            let label = checkedTask.nextElementSibling; // seçili elemanın aynı hizadakı bir sonraki elemanını almak
+            let status;
+            if (checkedTask.checked == true) {
+                label.classList.add("checked");
+                status = "Completed";
+            } else {
+                label.classList.remove("checked");
+                status = "Pending";
+            }
+
+            for (let task of tasksList) {
+                if (checkedTask.id == task.id) {
+                    task.status = status;
+                }
+            }
+            localStorage.setItem("tasksList", JSON.stringify(tasksList)); // tarayıcı hafızasını guncellemek
+            displayTasks(document.querySelector("span.active").id); 
+            console.log(tasksList);
+        }
+    </script>
+</body>
+</html>

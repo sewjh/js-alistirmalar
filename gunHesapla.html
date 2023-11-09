@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body{
+            padding: 20px;
+            background-color: rgb(103, 103, 103);
+        }
+        .main-card {
+            box-shadow: 0px 0px 5px black;
+            padding: 15px;
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(0, 0, 0, 0.477);
+        }
+        
+        input#tarih {
+            font-size: 15px;
+            text-align: center;
+            border: 0px;
+            background-color: rgba(0, 0, 0, 0.285);
+            color: white;
+            height: 40px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        input#hesapla {
+            height: 40px;
+            width: 90px;
+            background-color: rgba(0, 0, 0, 0.285);
+            color: white;
+            border: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        p#calculated {
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-card">
+        <div class="header">
+            <input type="date" id="tarih">
+            <input type="button" id="hesapla" value="HESAPLA">
+        </div>
+        <div class="bottom">
+            <p id="calculated">...</p>
+        </div>
+    </div>
+    <script>
+        let dateInput = document.querySelector("#tarih");
+        let calculateBtn = document.querySelector("#hesapla");
+        let calculatedValue = document.querySelector("#calculated");
+
+        let date;
+        let calculatedDate;
+        let second;
+        let minute;
+        let hour;
+        let day;
+        let year;
+        let wholeDate;
+
+
+        dateInput.addEventListener("change", function(){
+            date = this.value;
+            calculatedDate = new Date() - new Date(date);
+
+            second = calculatedDate / 1000;
+            minute = second / 60;
+            hour = minute / 60;
+            day = hour / 24;
+            year = day / 365;
+
+            wholeDate = `<b>Yıl:</b> ${year.toFixed(1)}<br><b>Gün:</b> ${day.toFixed(1)}<br><b>Saat:</b> ${hour.toFixed(1)}<br><b>Dakika:</b> ${minute.toFixed(1)}<br><b>Saniye:</b> ${second.toFixed(1)}`
+        })
+
+        calculateBtn.addEventListener("click", function(){
+            if (date == undefined || new Date(date) > new Date()) {
+                window.alert("Lütfen geçerli bir tarih seçin.")
+            } else {
+                calculatedValue.innerHTML = wholeDate;
+            }
+        })
+    </script>
+</body>
+</html>
